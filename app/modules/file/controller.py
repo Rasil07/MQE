@@ -12,9 +12,10 @@ class FileController:
     
     def upload(self, file):
         print("Inside file upload controller ===>")
-        isValid = self.file_service.validate_file(file)
+        isValid = self.file_service.upload_file(file)
         print("isValid ===>", isValid)
         if isValid['valid']:
             return jsonify({'message': 'File uploaded successfully'}), 200
         else:
             return jsonify({'message': 'File upload failed'}), 400
+        
