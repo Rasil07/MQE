@@ -1,3 +1,14 @@
 <!-- app/templates/index.html -->
 {% extends 'base.html' %} {% block content %}
+
+<form
+  method="post"
+  enctype="multipart/form-data"
+  action="/file/upload"
+  id="uploadForm"
+>
+  <input type="file" id="fileInput" accept=".xlsx, .xls" name="file" />
+  <button type="submit">Upload</button>
+</form>
+
 <h2>{% endblock %}</h2>

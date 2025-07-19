@@ -1,0 +1,11 @@
+<!-- app/templates/index.html -->
+{% extends 'base.html' %} {% block content %}
+
+<h1>List of files</h1>
+<ul>
+  {% for file in files %}
+  <li>{{ file.name }}</li>
+  {% endfor %}
+</ul>
+
+<h2>{% endblock %}</h2>
