@@ -13,3 +13,103 @@ nav a {
   text-decoration: none;
   color: #007bff;
 }
+
+/* Two-section layout */
+.container {
+  display: flex;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.upload-section {
+  flex: 1;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.files-section {
+  flex: 1;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.section-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.5em;
+}
+
+/* Upload form styles */
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.file-input {
+  padding: 10px;
+  border: 2px dashed #007bff;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+}
+
+.file-input:hover {
+  border-color: #0056b3;
+}
+
+.upload-btn {
+  padding: 12px 24px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.upload-btn:hover {
+  background: #0056b3;
+}
+
+/* File list styles */
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.file-item {
+  background: white;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-name {
+  font-weight: bold;
+  color: #333;
+}
+
+.file-info {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.no-files {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
+}

@@ -3,7 +3,8 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import pandas as pd
 from app.config import Config
-class FileHelper:
+from app.protocols import FileHelperProtocol
+class FileHelper(FileHelperProtocol):
     def __init__(self):
         # Allowed file extensions
         self.allowed_extensions = {'xlsx', 'xls'}
@@ -65,7 +66,7 @@ class FileHelper:
                 sheetData = excelFile.parse(sheet)
                 if not all(col in sheetData.columns for col in columns):
                     return {'valid': False, 'error': f'Sheet {sheet} must contain the following columns: {", ".join(columns)}'}    
-            return {'valid': True}
+            return {'valid': True, 'transaction_row_count': len(excelFile.parse('Transactions')), 'customer_row_count': len(excelFile.parse("Customers")), 'product_row_count': len(excelFile.parse('Products'))}
         except Exception as e:
             return {'valid': False, 'error': f'Validation error: {str(e)}'}
     

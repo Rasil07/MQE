@@ -5,10 +5,9 @@ class FileController:
         self.file_service = file_service
 
     def index(self):
-        return render_template('index.html')
-    
-    def list_files(self):
-        return render_template('list_files.html',files=[{'name': 'file1.xlsx'}, {'name': 'file2.xlsx'}])
+        files = self.file_service.get_all_files()
+        print("Files ===>", files)
+        return render_template('index.html', files=files)
     
     def upload(self, file):
         print("Inside file upload controller ===>")

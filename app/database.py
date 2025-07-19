@@ -1,8 +1,8 @@
 from app.config import Config
 import sqlite3
 import os
-
-class Database:
+from app.protocols import DatabaseProtocol
+class Database(DatabaseProtocol):
     def __init__(self, db_path):
         # Check if the database file exists at the specified path if not create it
         if not os.path.exists(db_path):
@@ -24,8 +24,52 @@ class Database:
         return sqlite3.connect(self.db_path)
         
 
-    def run(self,query, args=(), one=False):
-        cur = self.connect().execute(query, args)
-        rv = cur.fetchall()
-        cur.close()
-        return (rv[0] if rv else None) if one else rv
+    # def run(self, query, args=(), one=False):
+    #     conn = self.connect()
+    #     cur = conn.execute(query, args)
+    #     rv = cur.fetchall()
+    #     cur.close()
+    #     return (rv[0] if rv else None) if one else rv
+    
+
+    def run(self, query, args=(), commit=False, fetch_one=False, fetch_all=False, lastrowid=False):
+        """
+        Execute a SQLite query with the given arguments.
+        
+        Args:
+            query (str): The SQL query to execute.
+            args (tuple): The arguments to pass to the query (default: empty tuple).
+            commit (bool): Whether to commit the transaction (default: False).
+            fetch_one (bool): Whether to fetch only one result (default: False).
+            fetch_all (bool): Whether to fetch all results (default: False).
+            
+        Returns:
+            If fetch_one is True, returns a single row or None if no results.
+            If fetch_all is True, returns all rows as a list.
+            If neither, returns None.
+        """
+        conn = self.connect()
+        conn.row_factory = sqlite3.Row  
+        result = None
+        try:
+            cur = conn.execute(query, args)
+            if commit:
+                conn.commit()
+            if lastrowid:
+                result = cur.lastrowid
+            if fetch_one:
+                row = cur.fetchone()
+                result = dict(row) if row else None
+            elif fetch_all:
+                rows = cur.fetchall()
+                result = [dict(row) for row in rows]
+            else:
+                result = None
+            cur.close()
+            return result
+        except Exception as e:
+            print(f"Error executing query: {e}")
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()

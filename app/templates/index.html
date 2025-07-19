@@ -1,14 +1,92 @@
 <!-- app/templates/index.html -->
 {% extends 'base.html' %} {% block content %}
+<div class="container">
+  <!-- Left Section - Upload Form -->
+  <div class="upload-section">
+    <h2 class="section-title">Upload Excel File</h2>
+    <form
+      method="post"
+      enctype="multipart/form-data"
+      action="/file/upload"
+      id="uploadForm"
+      class="upload-form"
+    >
+      <input
+        type="file"
+        id="fileInput"
+        accept=".xlsx, .xls"
+        name="file"
+        class="file-input"
+        required
+      />
+      <button type="submit" class="upload-btn">Upload File</button>
+    </form>
+  </div>
 
-<form
-  method="post"
-  enctype="multipart/form-data"
-  action="/file/upload"
-  id="uploadForm"
->
-  <input type="file" id="fileInput" accept=".xlsx, .xls" name="file" />
-  <button type="submit">Upload</button>
-</form>
+  <!-- Right Section - File List -->
+  <div class="files-section">
+    <h2 class="section-title">Uploaded Files</h2>
+    {% if files %}
+    <ul class="file-list">
+      {% for file in files %}
+      <li class="file-item">
+        <div>
+          <div class="file-name">{{ file.name }}</div>
+          <div class="file-info">
+            ID: {{ file.identifier }} | Uploaded: {{ file.created_at if
+            file.created_at else 'N/A' }}
+          </div>
+        </div>
+        <div class="file-info">
+          {% if file.transaction_row_count %}
+          <div>Transactions: {{ file.transaction_row_count }}</div>
+          {% endif %} {% if file.customer_row_count %}
+          <div>Customers: {{ file.customer_row_count }}</div>
+          {% endif %} {% if file.product_row_count %}
+          <div>Products: {{ file.product_row_count }}</div>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="no-files">No files uploaded yet.</div>
+    {% endif %}
+  </div>
+</div>
 
-<h2>{% endblock %}</h2>
+<script>
+  document
+    .getElementById("uploadForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const fileInput = document.getElementById("fileInput");
+
+      if (!fileInput.files[0]) {
+        alert("Please select a file to upload.");
+        return;
+      }
+
+      fetch("/file/upload", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.message) {
+            alert(data.message);
+            if (data.message === "File uploaded successfully") {
+              // Reload the page to show the new file
+              window.location.reload();
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("An error occurred during upload.");
+        });
+    });
+</script>
+{% endblock %}

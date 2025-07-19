@@ -24,6 +24,13 @@ class FileRegister:
         """
         Register all file-related routes using add_url_rule
         """
+           # Upload file route
+        self.app.add_url_rule(
+            '/',
+            'index',
+            self.rootFile,
+            methods=['GET']
+        )
         # Upload file route
         self.app.add_url_rule(
             '/file/upload',
@@ -31,17 +38,9 @@ class FileRegister:
             self.upload_file,
             methods=['POST']
         )
-        self.app.add_url_rule(
-            '/files',
-            'list_files',
-            self.list_files,
-            methods=['GET']
-        )
         
-        
-      
-    def list_files(self):
-        return self.file_controller.list_files()
+    def rootFile(self):
+        return self.file_controller.index()
     
     def upload_file(self):
         """

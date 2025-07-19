@@ -20,8 +20,6 @@ def create_app(config_class_name='development'):
     app = Flask(__name__, template_folder='templates',static_folder='static')
     app.config.from_object(config_dict[config_class_name])
     print(f"Config: {config_dict[config_class_name]}")
-    from app.routes import main
-    app.register_blueprint(main)
 
     # Initialize database
     from app.database import Database
