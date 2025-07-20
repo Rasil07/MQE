@@ -28,7 +28,7 @@ class FileRegister:
         self.app.add_url_rule(
             '/',
             'index',
-            self.rootFile,
+            self.file_controller.index,
             methods=['GET']
         )
         # Upload file route
@@ -38,15 +38,33 @@ class FileRegister:
             self.upload_file,
             methods=['POST']
         )
-        
-    def rootFile(self):
-        return self.file_controller.index()
-    
+
+        # Generate report route
+        self.app.add_url_rule(
+            '/file/generate-report',
+            'generate_report',
+            self.generate_report,
+            methods=['POST']
+        )
+
+        # Download report route
+        self.app.add_url_rule(
+            '/file/download-report',
+            'download_report',
+            self.file_controller.download_report,
+            methods=['GET']
+        )
     def upload_file(self):
         """
         Handle file upload endpoint
         """
         return self.file_controller.upload(request.files['file'])
+    
+    def generate_report(self):
+        """
+        Handle report generation endpoint
+        """
+        return self.file_controller.generate_report(request.files['file'])
             
       
 

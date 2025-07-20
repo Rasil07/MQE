@@ -5,7 +5,7 @@ class FileModel(FileModelProtocol):
         self.db_connection = db_connection
 
     def create(self,payload):        
-       return self.db_connection.run('INSERT INTO uploads (name, identifier, transaction_row_count, customer_row_count, product_row_count) VALUES (?, ?, ?, ?, ?)', (payload['name'], payload['identifier'], payload['transaction_row_count'], payload['customer_row_count'], payload['product_row_count']),commit=True,lastrowid=True)        
+       return self.db_connection.run('INSERT INTO uploads (name, identifier, transaction_row_count, customer_row_count, product_row_count) VALUES (?, ?, ?, ?, ?)', (payload['name'], payload['identifier'], payload['transaction_row_count'], payload['customer_row_count'], payload['product_row_count']),commit=True)        
 
     def getById(self,upload_id):
         return self.db_connection.run('SELECT * FROM uploads WHERE id = ?', (upload_id,),fetch_one=True)

@@ -20,11 +20,10 @@ class Database(DatabaseProtocol):
             cur.close()
     
     def connect(self):
-        print(f"Connecting to database at {self.db_path}")
         return sqlite3.connect(self.db_path)
     
 
-    def run(self, query, args=(), commit=False, fetch_one=False, fetch_all=False, lastrowid=False):
+    def run(self, query, args=(), commit=False, fetch_one=False, fetch_all=False):
         """
         Execute a SQLite query with the given arguments.
         
@@ -47,8 +46,6 @@ class Database(DatabaseProtocol):
             cur = conn.execute(query, args)
             if commit:
                 conn.commit()
-            if lastrowid:
-                result = cur.lastrowid
             if fetch_one:
                 row = cur.fetchone()
                 result = dict(row) if row else None

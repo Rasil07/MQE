@@ -21,6 +21,5 @@ def find_template_files():
 
 if __name__ == '__main__':
     extra_files = find_template_files()
-    print("Watching these files:", extra_files)
     app.run(debug=(env == 'development'), extra_files=extra_files, use_reloader=True)
     

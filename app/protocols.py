@@ -1,6 +1,7 @@
 from typing import Protocol,runtime_checkable
 import sqlite3
 from typing import Any,Optional,Dict,Tuple,List
+from flask import Response
 
 
 @runtime_checkable
@@ -27,7 +28,6 @@ class FileModelProtocol(Protocol):
 @runtime_checkable
 class FileHelperProtocol(Protocol):
     allowed_extensions: set[str]
-    max_file_size: int
 
     def validate_file(self,file:Any)->Dict[str,Any]:
         ...
@@ -45,7 +45,12 @@ class FileServiceProtocol(Protocol):
 
     def upload_file(self,file:Any)->Dict[str,Any]:
         ...
-
+    def generate_report(self,file:Any)->Dict[str,Any]:
+        ...
+    def download_report(self)->bytes:
+        ...
+    def delete_file(self)->Optional[None]:
+        ...
 
 @runtime_checkable
 class FileControllerProtocol(Protocol):
@@ -57,6 +62,9 @@ class FileControllerProtocol(Protocol):
         ...
     def upload(self,file:Any)->Dict[str,Any]:
         ...
-    
+    def generate_report(self,file:Any)->Dict[str,Any]:
+        ...
+    def download_report(self)->Response:
+        ...
     
     

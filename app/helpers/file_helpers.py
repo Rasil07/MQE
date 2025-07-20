@@ -4,13 +4,13 @@ from werkzeug.utils import secure_filename
 import pandas as pd
 from app.config import Config
 from app.protocols import FileHelperProtocol
+from app.utils.geoLocation import MapBox
 
 class FileHelper(FileHelperProtocol):
     def __init__(self):
         # Allowed file extensions
         self.allowed_extensions = {'xlsx', 'xls'}
-        # Maximum file size (10MB)
-        self.max_file_size = 10 * 1024 * 1024
+        self.mapbox = MapBox()
 
     def validate_file(self, file):
         """
@@ -65,7 +65,14 @@ class FileHelper(FileHelperProtocol):
         """
         Enrich the address
         """
-        return address + "_enriched"
+        location_data = self.mapbox.get_coordinates(address)
+        
+        # If there's an error, return a default structure
+        if 'error' in location_data:
+            return {'latitude': None,'longitude': None}
+        
+        return {'latitude': location_data[0], 'longitude': location_data[1] }
+
 
     def build_address_history(self, raw_customer_data):
         """
@@ -90,6 +97,7 @@ class FileHelper(FileHelperProtocol):
                     address_first_seen = None
                 # This will be an external API call to enrich the address
                 enriched_address = self.enrich_address(address)
+
                 cleaned_rows.append({
                     'customer_id': customer_id,
                     'name': name,
@@ -110,29 +118,19 @@ class FileHelper(FileHelperProtocol):
 
         return df
 
-    def build_product_data(self, raw_product_data):
-        """
-        Build the product data
-        """
-        return pd.DataFrame(raw_product_data)
-
-    def merge_trxn_product_data(self, raw_transaction_data, raw_product_data):
-        """
-        Merge the transaction and product data
-        """
-        return pd.merge(raw_transaction_data, raw_product_data, on='product_code', how='left')
 
     def build_customer_trxn_prod_data(self, trxn_prod_data):
         """
         Build the transaction data
         """
-        return trxn_prod_data.groupby(['customer_id', 'category'])['amount'].sum().reset_index().rename(columns={'amount': 'total_spent'})
+        return trxn_prod_data.groupby(['customer_id', 'category'])['amount'].sum().reset_index().rename(columns={'amount': 'total_spent'}).sort_values(['customer_id', 'total_spent'], ascending=[True, False])
 
     def build_top_spender_per_category(self, customer_trxn_prod_data: pd.DataFrame):
         """
         Build the top spender per category
         """
-        return customer_trxn_prod_data.sort_values(['category', 'total_spent'], ascending=[True, False]).groupby('category').first().reset_index(drop=True)
+        return customer_trxn_prod_data.sort_values(['category', 'total_spent'],ascending=[True, False]).groupby('category', as_index=False).first()[['category', 'customer_id', 'total_spent']] # last() because we want the top spender per category
+        
 
     def build_customer_spent_rank(self, trxn_prod_data: pd.DataFrame):
         """
@@ -140,27 +138,19 @@ class FileHelper(FileHelperProtocol):
         """
         total_spent_data = trxn_prod_data.groupby('customer_id')['amount'].sum().reset_index().rename(columns={'amount': 'total_spent'})
         total_spent_data['rank'] = total_spent_data['total_spent'].rank(method='first', ascending=False).astype(int)
-        return total_spent_data
+        return total_spent_data.sort_values('rank', ascending=True)
 
     def process_file(self, file):
-        """
-        Process the file
-        """
-        print("inside process file ===>", file)
         excelFile = pd.ExcelFile(file)
         product_data = excelFile.parse('Products')
         transaction_data = excelFile.parse('Transactions')
         raw_customer_data = excelFile.parse('Customers', header=None)
 
         customer_address_history_data = self.build_address_history(raw_customer_data)
-        trxn_prod_data = self.merge_trxn_product_data(transaction_data, product_data)
+        trxn_prod_data = pd.merge(transaction_data, product_data, on='product_code', how='left')
         customer_trxn_prod_data = self.build_customer_trxn_prod_data(trxn_prod_data)
         top_spender_per_category = self.build_top_spender_per_category(customer_trxn_prod_data)
         customer_spent_rank = self.build_customer_spent_rank(trxn_prod_data)
-
-        print("Customer data ===>", customer_address_history_data.head())
-        print("Product data ===>", product_data.head())
-        print("Transaction data ===>", transaction_data.head())
 
         """
         a. Detect changes in customer addresses over time and keep a history of those changes.
@@ -179,19 +169,11 @@ class FileHelper(FileHelperProtocol):
         if os.path.exists(report_path):
             os.remove(report_path)
 
-        # Use mode='w' and if_sheet_exists='replace' to avoid corruption
-        # Also, ensure all dataframes are written with index=False and sheet names are valid
         with pd.ExcelWriter(report_path, engine='openpyxl', mode='w') as writer:
-            # Write each DataFrame to a separate sheet
-            customer_address_history_data.to_excel(writer, sheet_name='Customer_Address_History', index=False)
-            customer_trxn_prod_data.to_excel(writer, sheet_name='Trxn_Per_Customer_Per_Cat', index=False)
-            # Show product code as well in the Top_Spender_Per_Cat sheet
-            cols_to_show = ['category', 'customer_id', 'total_spent', 'product_code']
-            # Only include columns that exist in the DataFrame to avoid errors
-            available_cols = [col for col in cols_to_show if col in top_spender_per_category.columns]
-            top_spender_per_category[available_cols].to_excel(writer, sheet_name='Top_Spender_Per_Cat', index=False)
-            customer_spent_rank.to_excel(writer, sheet_name='Customer_Spent_Rank', index=False)
-            # Save the writer explicitly (not strictly necessary, but for clarity)
+            customer_address_history_data.to_excel(writer, sheet_name='Customer Address History', index=False)
+            customer_trxn_prod_data.to_excel(writer, sheet_name='Trxn Per Customer Per Category', index=False)
+            top_spender_per_category.to_excel(writer, sheet_name='Top Spender Per Category', index=False)
+            customer_spent_rank.to_excel(writer, sheet_name='Customer Spent Rank', index=False)            
             writer.book.save(report_path)
 
     def _allowed_file(self, filename):

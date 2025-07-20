@@ -10,7 +10,6 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    TEMPLATES_AUTO_RELOAD = True
 
 class TestingConfig(Config):
     TESTING = True

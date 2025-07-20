@@ -1,7 +1,6 @@
 # Makefile
 # This Makefile is used to install the dependencies and run the application
 # It is used to simplify the process of setting up and running the application
-# It is used to simplify the process of setting up and running the application
 
 
 install:
@@ -15,4 +14,4 @@ run:
 	. .venv/bin/activate && python run.py
 
 freeze:
-	pip freeze > requirements.txt
+	. .venv/bin/activate && pip freeze > requirements.txt

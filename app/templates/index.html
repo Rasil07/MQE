@@ -20,7 +20,9 @@
         class="file-input"
         required
       />
-      <button type="submit" class="upload-btn">Upload File</button>
+      <button type="submit" class="upload-btn" id="uploadBtn">
+        Upload File
+      </button>
     </form>
 
     <div class="files-section">
@@ -52,7 +54,7 @@
                 file.created_at else 'N/A' }}
               </div>
             </div>
-            <div style="font-size: 0.95em; color: #444">
+            <div style="font-size: 0.95em; color: #444; padding: 12px">
               {% if file.transaction_row_count %}
               <div>Transactions: {{ file.transaction_row_count }}</div>
               {% endif %} {% if file.customer_row_count %}
@@ -71,7 +73,8 @@
     </div>
   </div>
 
-  <div class="file-info">
+  <!-- Upload Details Section - Hidden initially and after download -->
+  <div class="file-info" id="uploadDetailsSection" style="display: none">
     <h2 class="section-title" style="margin-top: 0">Latest Upload Details</h2>
     {% if files and files|length > 0 %} {% set latest = files[0] %}
     <div style="margin-bottom: 12px">
@@ -90,22 +93,22 @@
       <div>Products: {{ latest.product_row_count }}</div>
       {% endif %}
 
-      <form method="get" action="/file/download/{{ latest.identifier }}">
-        <button
-          type="submit"
-          class="download-btn"
-          style="
-            padding: 8px 18px;
-            background: #1976d2;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-          "
-        >
-          Download Processed Excel File
-        </button>
-      </form>
+      <button
+        type="button"
+        class="download-btn"
+        id="downloadBtn"
+        onclick="downloadReport()"
+        style="
+          padding: 8px 18px;
+          background: #1976d2;
+          color: #fff;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        "
+      >
+        Download Processed Excel File
+      </button>
     </div>
 
     {% else %}
@@ -161,6 +164,44 @@
       });
   }
 
+  // Show upload details section
+  function showUploadDetails() {
+    const uploadDetailsSection = document.getElementById(
+      "uploadDetailsSection"
+    );
+    if (uploadDetailsSection) {
+      uploadDetailsSection.style.display = "block";
+    }
+  }
+
+  // Hide upload details section
+  function hideUploadDetails() {
+    const uploadDetailsSection = document.getElementById(
+      "uploadDetailsSection"
+    );
+    if (uploadDetailsSection) {
+      uploadDetailsSection.style.display = "none";
+    }
+  }
+
+  // Hide the download button initially
+  document.getElementById("downloadBtn").style.display = "none";
+
+  // Show the download button only after successful upload and report generation
+  function showDownloadButton() {
+    document.getElementById("downloadBtn").style.display = "inline-block";
+  }
+
+  // Hide the download button (e.g., after upload starts)
+  function hideDownloadButton() {
+    document.getElementById("downloadBtn").style.display = "none";
+  }
+
+  // Hide download button on page load and when upload starts
+  hideDownloadButton();
+
+  hideUploadDetails();
+
   document
     .getElementById("uploadForm")
     .addEventListener("submit", function (e) {
@@ -174,6 +215,14 @@
         return;
       }
 
+      document.getElementById("uploadBtn").disabled = true;
+      document.getElementById("uploadBtn").textContent = "Uploading...";
+
+      document.getElementById("downloadBtn").disabled = true;
+      document.getElementById("downloadBtn").textContent =
+        "Generating report...";
+
+      // First API call: Upload file and save to database
       fetch("/file/upload", {
         method: "POST",
         body: formData,
@@ -189,10 +238,46 @@
               status === 200 &&
               body.message === "File uploaded successfully"
             ) {
-              showMessage(body.message, true);
+              showMessage(
+                "File uploaded successfully. Generating report...",
+                true
+              );
+              showDownloadButton(); // Show download button after upload success
+              showUploadDetails(); // Show upload details after successful upload
+
+              // Second API call: Generate report
+              const reportFormData = new FormData();
+              reportFormData.append("file", fileInput.files[0]);
+
+              return fetch("/file/generate-report", {
+                method: "POST",
+                body: reportFormData,
+              });
+            } else {
+              showMessage(body.message, false);
+              throw new Error(body.message);
+            }
+          }
+        })
+        .then((response) => {
+          if (response) {
+            return response
+              .json()
+              .then((data) => ({ status: response.status, body: data }));
+          }
+        })
+        .then(({ status, body }) => {
+          if (body && body.message) {
+            if (
+              status === 200 &&
+              body.message === "Report generated successfully"
+            ) {
+              showMessage(
+                "File uploaded and report generated successfully!",
+                true
+              );
               fileInput.value = "";
               updateFileList();
-
               setTimeout(clearMessage, 3000);
             } else {
               showMessage(body.message, false);
@@ -201,8 +286,45 @@
         })
         .catch((error) => {
           console.error("Error:", error);
-          showMessage("An error occurred during upload.", false);
+          showMessage(
+            "An error occurred during upload or report generation.",
+            false
+          );
+        })
+        .finally(() => {
+          document.getElementById("uploadBtn").disabled = false;
+          document.getElementById("uploadBtn").textContent = "Upload File";
+          document.getElementById("downloadBtn").disabled = false;
+          document.getElementById("downloadBtn").textContent =
+            "Download Processed Excel File";
         });
     });
+
+  function downloadReport() {
+    fetch("/file/download-report")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        console.log({ blob });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Report.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        document.getElementById("downloadBtn").style.display = "none";
+        document.getElementById("uploadDetailsSection").style.display = "none";
+      })
+      .catch((error) => {
+        alert("An error occurred during download.");
+        console.error("Download error:", error);
+      });
+  }
 </script>
 {% endblock %}
