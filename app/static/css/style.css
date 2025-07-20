@@ -14,7 +14,6 @@ nav a {
   color: #007bff;
 }
 
-/* Two-section layout */
 .container {
   display: flex;
   gap: 30px;
@@ -32,7 +31,7 @@ nav a {
 
 .files-section {
   flex: 1;
-  background: #f8f9fa;
+  background: #ffffff;
   padding: 20px;
   border-radius: 8px;
   border: 1px solid #dee2e6;
@@ -103,6 +102,11 @@ nav a {
 }
 
 .file-info {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 10px;
+  flex: 1 1 300px;
+  height: 100%;
   font-size: 0.9em;
   color: #666;
 }

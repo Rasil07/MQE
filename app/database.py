@@ -22,14 +22,6 @@ class Database(DatabaseProtocol):
     def connect(self):
         print(f"Connecting to database at {self.db_path}")
         return sqlite3.connect(self.db_path)
-        
-
-    # def run(self, query, args=(), one=False):
-    #     conn = self.connect()
-    #     cur = conn.execute(query, args)
-    #     rv = cur.fetchall()
-    #     cur.close()
-    #     return (rv[0] if rv else None) if one else rv
     
 
     def run(self, query, args=(), commit=False, fetch_one=False, fetch_all=False, lastrowid=False):

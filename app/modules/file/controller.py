@@ -1,7 +1,7 @@
 from flask import render_template, jsonify
-
-class FileController:
-    def __init__(self, file_service):
+from app.protocols import FileControllerProtocol,FileServiceProtocol
+class FileController(FileControllerProtocol):
+    def __init__(self, file_service:FileServiceProtocol):
         self.file_service = file_service
 
     def index(self):
@@ -16,5 +16,6 @@ class FileController:
         if isValid['valid']:
             return jsonify({'message': 'File uploaded successfully'}), 200
         else:
-            return jsonify({'message': 'File upload failed'}), 400
+            return jsonify({'message': isValid['error']}), 400
+    
         

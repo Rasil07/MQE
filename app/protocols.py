@@ -29,15 +29,14 @@ class FileHelperProtocol(Protocol):
     allowed_extensions: set[str]
     max_file_size: int
 
-    def pre_upload_check(self,file:Any)->Dict[str,Any]:
-        ...
-    def post_upload_check(self,file_name:str)->Dict[str,Any]:
-        ...
-    def save_file(self,file:Any)->Tuple[str,str]:
+    def validate_file(self,file:Any)->Dict[str,Any]:
         ...
     def _allowed_file(self,filename:str)->bool:
         ...
-    
+    def generate_unique_filename(self,file:Any)->Tuple[str,str]:
+        ...
+    def process_file(self,file:Any)->Dict[str,Any]:
+        ...
     
 @runtime_checkable
 class FileServiceProtocol(Protocol):
