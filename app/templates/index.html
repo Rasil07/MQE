@@ -5,12 +5,11 @@
   <div style="flex: 2 1 400px; min-width: 350px">
     <h2 class="section-title">Upload Excel File</h2>
     <form
-      method="post"
       enctype="multipart/form-data"
-      action="/file/upload"
       id="uploadForm"
       class="upload-form"
       style="margin-bottom: 24px"
+      onsubmit="upload(event)"
     >
       <input
         type="file"
@@ -185,16 +184,25 @@
   }
 
   // Hide the download button initially
-  document.getElementById("downloadBtn").style.display = "none";
+  const downloadBtn = document.getElementById("downloadBtn");
+  if (downloadBtn) {
+    downloadBtn.style.display = "none";
+  }
 
   // Show the download button only after successful upload and report generation
   function showDownloadButton() {
-    document.getElementById("downloadBtn").style.display = "inline-block";
+    const downloadBtn = document.getElementById("downloadBtn");
+    if (downloadBtn) {
+      downloadBtn.style.display = "inline-block";
+    }
   }
 
   // Hide the download button (e.g., after upload starts)
   function hideDownloadButton() {
-    document.getElementById("downloadBtn").style.display = "none";
+    const downloadBtn = document.getElementById("downloadBtn");
+    if (downloadBtn) {
+      downloadBtn.style.display = "none";
+    }
   }
 
   // Hide download button on page load and when upload starts
@@ -202,103 +210,112 @@
 
   hideUploadDetails();
 
-  document
-    .getElementById("uploadForm")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
+  function upload(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const fileInput = document.getElementById("fileInput");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
 
-      const formData = new FormData(this);
-      const fileInput = document.getElementById("fileInput");
+    console.log({ formData });
 
-      if (!fileInput.files[0]) {
-        showMessage("Please select a file to upload.", false);
-        return;
-      }
+    if (!fileInput.files[0]) {
+      showMessage("Please select a file to upload.", false);
+      return;
+    }
 
-      document.getElementById("uploadBtn").disabled = true;
-      document.getElementById("uploadBtn").textContent = "Uploading...";
+    if (uploadBtn) {
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "Uploading...";
+    }
 
-      document.getElementById("downloadBtn").disabled = true;
-      document.getElementById("downloadBtn").textContent =
-        "Generating report...";
+    if (downloadBtn) {
+      downloadBtn.disabled = true;
+      downloadBtn.textContent = "Generating report...";
+    }
 
-      // First API call: Upload file and save to database
-      fetch("/file/upload", {
-        method: "POST",
-        body: formData,
+    //       // First API call: Upload file and save to database
+    fetch("/file/upload", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) =>
+        response
+          .json()
+          .then((data) => ({ status: response.status, body: data }))
+      )
+      .then(({ status, body }) => {
+        console.log({ status, body });
+        if (body.message) {
+          if (status === 200 && body.message === "File uploaded successfully") {
+            showMessage(
+              "File uploaded successfully. Generating report...",
+              true
+            );
+            showDownloadButton(); // Show download button after upload success
+            showUploadDetails(); // Show upload details after successful upload
+
+            // Second API call: Generate report
+            const reportFormData = new FormData();
+            reportFormData.append("file", fileInput.files[0]);
+
+            return fetch("/file/generate-report", {
+              method: "POST",
+              body: reportFormData,
+            });
+          } else {
+            showMessage(body.message, false);
+            throw new Error(body.message);
+          }
+        }
       })
-        .then((response) =>
-          response
+      .then((response) => {
+        if (response) {
+          return response
             .json()
-            .then((data) => ({ status: response.status, body: data }))
-        )
-        .then(({ status, body }) => {
-          if (body.message) {
-            if (
-              status === 200 &&
-              body.message === "File uploaded successfully"
-            ) {
-              showMessage(
-                "File uploaded successfully. Generating report...",
-                true
-              );
-              showDownloadButton(); // Show download button after upload success
-              showUploadDetails(); // Show upload details after successful upload
+            .then((data) => ({ status: response.status, body: data }));
+        }
+      })
+      .then(({ status, body }) => {
+        if (body && body.message) {
+          if (
+            status === 200 &&
+            body.message === "Report generated successfully"
+          ) {
+            showMessage(
+              "File uploaded and report generated successfully!",
+              true
+            );
+            fileInput.value = "";
+            updateFileList();
+            setTimeout(clearMessage, 3000);
+          } else {
+            showMessage(body.message, false);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showMessage(
+          "An error occurred during upload or report generation.",
+          false
+        );
+      })
+      .finally(() => {
+        const uploadBtn = document.getElementById("uploadBtn");
+        const downloadBtn = document.getElementById("downloadBtn");
 
-              // Second API call: Generate report
-              const reportFormData = new FormData();
-              reportFormData.append("file", fileInput.files[0]);
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = "Upload File";
+        }
 
-              return fetch("/file/generate-report", {
-                method: "POST",
-                body: reportFormData,
-              });
-            } else {
-              showMessage(body.message, false);
-              throw new Error(body.message);
-            }
-          }
-        })
-        .then((response) => {
-          if (response) {
-            return response
-              .json()
-              .then((data) => ({ status: response.status, body: data }));
-          }
-        })
-        .then(({ status, body }) => {
-          if (body && body.message) {
-            if (
-              status === 200 &&
-              body.message === "Report generated successfully"
-            ) {
-              showMessage(
-                "File uploaded and report generated successfully!",
-                true
-              );
-              fileInput.value = "";
-              updateFileList();
-              setTimeout(clearMessage, 3000);
-            } else {
-              showMessage(body.message, false);
-            }
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          showMessage(
-            "An error occurred during upload or report generation.",
-            false
-          );
-        })
-        .finally(() => {
-          document.getElementById("uploadBtn").disabled = false;
-          document.getElementById("uploadBtn").textContent = "Upload File";
-          document.getElementById("downloadBtn").disabled = false;
-          document.getElementById("downloadBtn").textContent =
-            "Download Processed Excel File";
-        });
-    });
+        if (downloadBtn) {
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = "Download Processed Excel File";
+        }
+      });
+  }
 
   function downloadReport() {
     fetch("/file/download-report")
@@ -318,8 +335,17 @@
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        document.getElementById("downloadBtn").style.display = "none";
-        document.getElementById("uploadDetailsSection").style.display = "none";
+        const downloadBtn = document.getElementById("downloadBtn");
+        const uploadDetailsSection = document.getElementById(
+          "uploadDetailsSection"
+        );
+
+        if (downloadBtn) {
+          downloadBtn.style.display = "none";
+        }
+        if (uploadDetailsSection) {
+          uploadDetailsSection.style.display = "none";
+        }
       })
       .catch((error) => {
         alert("An error occurred during download.");
