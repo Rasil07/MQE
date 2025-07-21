@@ -51,6 +51,8 @@ class FileService(FileServiceProtocol):
 
     def download_report(self):
         file_path = os.path.join('uploads', 'Report.xlsx')
+        if not os.path.exists(file_path):
+            return None
         with open(file_path, 'rb') as f:
             file_data = f.read()
         return file_data
